@@ -1,0 +1,7 @@
+*.pyc
+.coverage
+.coverage.*
+
+#migrations
+migrations/
+*.sqlite
