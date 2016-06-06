@@ -10,6 +10,7 @@ from serializers import user_serializer, bucketlist_serializer, bucketlistitem_s
 
 auth = HTTPBasicAuth()
 
+class bucketlist(self):
 
 class Home(Resource):
     """
@@ -69,11 +70,19 @@ class Login(Resource):
         Returns:
             json: authentication token, expiration duration or error message.
         """
-        args = validate_input({'username': True, 'password': True})
+        try:
+            self.parser = reqparse.RequestParser()
+            self.parser.add_argument('username', type=str, required=True,
+                                     help='Unauthorized Access', location='json')
+            self.parser.add_argument('password', type=str, required=True,
+                                     help='Unauthorized Access', location='json')
+            args = self.parser.parse_args()
+        except Exception as e:
+            return {'error': str(e)}, 401
         user = User.query.filter_by(username=args['username']).first()
         if user and user.verify(args['password']):
             token = user.generate_auth_token()
-            return jsonify({'Access granted': token.decode('ascii')})
+            return jsonify({'Token': token.decode('ascii')})
         else:
             return jsonify({'Message':
                             'The username or password was invalid.'
@@ -94,9 +103,9 @@ class Register(Resource):
         try:
             self.parser = reqparse.RequestParser()
             self.parser.add_argument('username', type=str, required=True,
-                                     help='Username is required', location='json')
+                                     help='Unauthorized Access', location='json')
             self.parser.add_argument('password', type=str, required=True,
-                                     help='Password is required', location='json')
+                                     help='Unauthorized Access', location='json')
             args = self.parser.parse_args()
             username = args['username']
             password = args['password']
