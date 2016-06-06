@@ -4,6 +4,7 @@ from flask_restful import fields
 bucketlistitem_serializer = {
     'item_id': fields.Integer,
     'item_name': fields.String,
+    'item_description': fields.String,
     'done': fields.Boolean,
     'date_created': fields.DateTime,
     'date_modified': fields.DateTime

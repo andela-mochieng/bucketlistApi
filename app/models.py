@@ -13,6 +13,7 @@ class BucketListItem(db.Model):
     __tablename__ = "bucketlistitems"
     item_id = db.Column(db.Integer, primary_key=True)
     item_name = db.Column(db.String(256), unique=True)
+    item_description = db.Column(db.String(256), unique=True)
     done = db.Column(db.Boolean(), default=False, index=True)
     date_created = db.Column(db.DateTime, index=True, default=datetime.utcnow)
     date_modified = db.Column(db.DateTime, default=db.func.current_timestamp(),
@@ -29,7 +30,7 @@ class BucketList(db.Model):
     Define a bucketlist.
     Attributes:
         id (int): A user's id.
-        list_id (str): Buckectlist unique identifier.
+        list_name (str): Buckectlist unique name.
         bucketlists (relationship): A user's bucketlists.
         user_id (int): The author's id
         created_by (int): The author's id
@@ -39,7 +40,7 @@ class BucketList(db.Model):
 
     __tablename__ = 'bucketlists'
     id = db.Column(db.Integer, primary_key=True)
-    list_id = db.Column(db.String(100), unique=True)
+    list_name = db.Column(db.String(100), unique=True)
     bucketlist_items = db.relationship('BucketListItem', backref='bucketlist')
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     created_by = db.Column(db.Integer)
@@ -78,10 +79,10 @@ class User(db.Model):
         """
         return check_password_hash(self.password_hash, str(password))
 
-    def __init__(self, username, password_hash):
+    def __init__(self, username, password):
         """Initialize a user object."""
         self.username = username
-        self.password_hash = generate_password_hash(str('password'))
+        self.password_hash = generate_password_hash(str(password))
 
     @property
     def password(self):
@@ -116,7 +117,7 @@ class User(db.Model):
         try:
             data = token_serializer.loads(token)
         except (SignatureExpired, BadSignature):
-            return {'error': 'The token is not valid'}
+            return {'error': 'The token is invalid'}
         user = User.query.get(data['id'])
         return user
 

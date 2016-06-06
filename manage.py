@@ -3,11 +3,18 @@ from app import create_app, db
 from app.models import User, BucketList, BucketListItem
 from flask.ext.script import Manager, Shell
 from flask.ext.migrate import Migrate, MigrateCommand
+from flask.ext.restful import Api
+from app.resources import Home, Login, Register
 
 
 app = create_app
 manager = Manager(app)
+api = Api(app=app, prefix='/api/v1.0')
 migrate = Migrate(app, db)
+
+api.add_resource(Home, '/', endpoint='home')
+api.add_resource(Login, '/auth/login/', endpoint='login')
+api.add_resource(Register, '/auth/register/', endpoint='register')
 
 
 def make_shell_context():
