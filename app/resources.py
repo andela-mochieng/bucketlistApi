@@ -7,6 +7,7 @@ from app import db
 from config import Config
 from config import config
 from app.models import BucketList, User, BucketListItem
+from serializers import bucketlist_serializer
 from flask_httpauth import HTTPTokenAuth
 from itsdangerous import (TimedJSONWebSignatureSerializer
                           as Serializer, BadSignature, SignatureExpired)
@@ -40,50 +41,50 @@ class BucketLists(Resource):
     Returns:
         json: A list of bucketlists created by the user.
     """
-    # @auth.login_required
+    @auth.login_required
+    def get(self):
+        args = request.args.to_dict()
+        limit = int(args.get('limit', 10))
+        page = int(args.get('page', 1))
+        name = args.get('q')
+        if name:
+            results = BucketList.query.\
+                filter_by(created_by=g.user, list_name=name).\
+                paginate(page, limit, False).items
+            if results:
+                pass
+                # return results.get()
+            else:
+                return {'Message':
+                        'Bucketlist ' + name + ' not found.'}, 404
+        if args.keys().__contains__('q'):
+            return jsonify({'Message': 'Please provide a search parameter'})
 
-    # def get(self):
-    #     args = request.args.to_dict()
-    #     limit = int(args.get('limit', 10))
-    #     page = int(args.get('page', 1))
-    #     name = args.get('q')
-    #     if name:
-    #         results = BucketList.query.\
-    #             filter_by(created_by=g.user.id, list_name=name).\
-    #             paginate(page, limit, False).items
-    #         if results:
-    #             return marshal(results, bucketlist_serializer)
-    #         else:
-    #             return {'Message':
-    #                     'Bucketlist ' + name + ' not found.'}, 404
-    #     if args.keys().__contains__('q'):
-    #         return jsonify({'Message': 'Please provide a search parameter'})
+        bucketlists_page = BucketList.query.\
+            filter_by(created_by=g.user).paginate(
+                page=page, per_page=limit, error_out=False)
+        total = bucketlists_page.pages
+        next_item = bucketlists_page.has_next
+        previous_item = bucketlists_page.has_prev
+        if next_item:
+            next_page = str(request.url_root) + 'api/v1.0/bucketlists?' + \
+                'limit=' + str(limit) + '&page=' + str(page + 1)
+        else:
+            next_page = 'None'
+        if previous_item:
+            previous_page = request.url_root + 'api/v1.0/bucketlists?' + \
+                'limit=' + str(limit) + '&page=' + str(page - 1)
+        else:
+            previous_page = 'None'
+        bucketlists = bucketlists_page.items
 
-    #     bucketlists_page = BucketList.query.\
-    #         filter_by(created_by=g.user.id).paginate(
-    #             page=page, per_page=limit, error_out=False)
-    #     total = bucketlists_page.pages
-    #     next_item = bucketlists_page.next_item
-    #     previous_item = bucketlists_page.has_prev
-    #     if next_item:
-    #         next_page = str(request.url_root) + 'api/v1.0/bucketlists?' + \
-    #             'limit=' + str(limit) + '&page=' + str(page + 1)
-    #     else:
-    #         next_page = 'None'
-    #     if previous_item:
-    #         previous_page = request.url_root + 'api/v1.0/bucketlists?' + \
-    #             'limit=' + str(limit) + '&page=' + str(page - 1)
-    #     else:
-    #         previous_page = 'None'
-    #     bucketlists = bucketlists_page.items
-
-    #     quest = {'bucketlists': marshal(bucketlists, bucketlist_serializer),
-    #              'next_item': next_item,
-    #              'pages': total,
-    #              'previous_page': previous_page,
-    #              'next_page': next_page
-    #              }
-    #     return quest
+        quest = {'bucketlists': marshal(bucketlists, bucketlist_serializer),
+                 'next_item': next_item,
+                 'pages': total,
+                 'previous_page': previous_page,
+                 'next_page': next_page
+                 }
+        return quest
 
     @auth.login_required
     def post(self):
@@ -114,7 +115,9 @@ class BucketLists(Resource):
                     list_name=list_name, created_by=g.user)
                 db.session.add(new_bucketlist)
                 db.session.commit()
-                return new_bucketlist.get(), 201
+                # return new_bucketlist.get(), 201
+                return {'message': 'BucketList {} has been created'.format(new_bucketlist.get())}, 201
+
 
 
 class Home(Resource):
