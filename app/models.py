@@ -1,4 +1,5 @@
 """Bucketlist models """
+from flask import g
 from . import db
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -11,47 +12,65 @@ class BucketListItem(db.Model):
     """Define items in a user's bucketlist."""
 
     __tablename__ = "bucketlistitems"
-    item_id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True)
     item_name = db.Column(db.String(256), unique=True)
     item_description = db.Column(db.String(256), unique=True)
     done = db.Column(db.Boolean(), default=False, index=True)
     date_created = db.Column(db.DateTime, index=True, default=datetime.utcnow)
     date_modified = db.Column(db.DateTime, default=db.func.current_timestamp(),
                               onupdate=db.func.current_timestamp())
-    bucketlist_id = db.Column(db.Integer, db.ForeignKey('bucketlists.id'))
+    bucketlist_id = db.Column(db.Integer, db.ForeignKey(
+        'bucketlists.id'), nullable=False)
+
+    def __init__(self, name, bucketlist_id):
+        """Method used for instantiation of a BucketListItem Model"""
+        self.name = name
+        self.bucketlist_id = bucketlist_id
 
     def __repr__(self):
         """Return a string representation of the user."""
-        return '<BucketListItem %r>' % self.item_name
+        return '{}'.format(self.id)
+
+    def get(self):
+        return {
+            'id': self.id,
+            'item_name': self.list_name,
+            'item_description': self.item_description,
+            'done': self.done,
+            'created_by': self.created_by,
+            'date_created': self.date_created,
+            'date_modified': self.date_modified
+        }
 
 
 class BucketList(db.Model):
     """
     Define a bucketlist.
-    Attributes:
-        id (int): A user's id.
-        list_name (str): Buckectlist unique name.
-        bucketlists (relationship): A user's bucketlists.
-        user_id (int): The author's id
-        created_by (int): The author's id
-        date_created (dateTime): Date of bucketlist creation
-        date_modified (dateTime): Date of bucketlist modification
     """
 
     __tablename__ = 'bucketlists'
     id = db.Column(db.Integer, primary_key=True)
     list_name = db.Column(db.String(100), unique=True)
-    bucketlist_items = db.relationship('BucketListItem', backref='bucketlist')
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-    created_by = db.Column(db.Integer)
+    bucketlist_items = db.relationship(
+        'BucketListItem', backref='bucketlist', lazy='dynamic')
+    created_by = db.Column(
+        db.Integer, db.ForeignKey('user.id'), nullable=False)
     date_created = db.Column(db.DateTime, index=True, default=datetime.utcnow)
     date_modified = db.Column(db.DateTime, default=db.func.current_timestamp(),
                               onupdate=db.func.current_timestamp())
 
     def __repr__(self):
         """Return a string representation of the bucketlist."""
-        return '<BucketList %r>' % self.list_id
+        return '<BucketList %r>' % self.id
 
+    def get(self):
+        return {
+            'id': self.id,
+            'list_name': self.list_name,
+            'created_by': self.created_by,
+            'date_created': self.date_created,
+            'date_modified': self.date_modified
+        }
 
 class User(db.Model):
     """
@@ -62,27 +81,28 @@ class User(db.Model):
         bucketlists (relationship): User's bucketlists.
     """
 
-    __tablename__ = 'users'
+    __tablename__ = 'user'
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True)
     password_hash = db.Column(db.String(128))
-    bucketlists = db.relationship('BucketList', backref='user')
-
-    def verify(self, password):
-        """
-        Confirm user password.
-        Args:
-            password
-        Returns:
-            bool: True if the hash value of password matches a user's
-            saved password hash.
-        """
-        return check_password_hash(self.password_hash, str(password))
+    bucketlists = db.relationship(
+        'BucketList', backref='bucketlist_', lazy='dynamic')
 
     def __init__(self, username, password):
         """Initialize a user object."""
         self.username = username
         self.password_hash = generate_password_hash(str(password))
+
+    def verify_password(self, password):
+        """
+        Verify a user's password.
+        Args:
+            password
+        Returns:
+            bool: True if the hash value of password mathes a user's
+            stored password hash.
+        """
+        return check_password_hash(self.password_hash, str(password))
 
     @property
     def password(self):
@@ -119,8 +139,17 @@ class User(db.Model):
         except (SignatureExpired, BadSignature):
             return {'error': 'The token is invalid'}
         user = User.query.get(data['id'])
+
         return user
+
+
 
     def __repr__(self):
         """Return a string representation of the user."""
         return '<User %r>' % self.username
+
+    def get(self):
+        return {
+            'id': self.id,
+            'username': self.username
+        }

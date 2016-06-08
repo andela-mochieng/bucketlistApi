@@ -4,7 +4,7 @@ from app.models import User, BucketList, BucketListItem
 from flask.ext.script import Manager, Shell
 from flask.ext.migrate import Migrate, MigrateCommand
 from flask.ext.restful import Api
-from app.resources import Home, Login, Register
+from app.resources import Home, Login, Register, BucketLists
 
 
 app = create_app
@@ -15,7 +15,7 @@ migrate = Migrate(app, db)
 api.add_resource(Home, '/', endpoint='home')
 api.add_resource(Login, '/auth/login/', endpoint='login')
 api.add_resource(Register, '/auth/register/', endpoint='register')
-
+api.add_resource(BucketLists, '/bucketlist/', endpoint='bucketlist')
 
 def make_shell_context():
     """Add app, database and models to the shell."""
