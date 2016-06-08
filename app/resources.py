@@ -28,12 +28,93 @@ def verify_token(token):
             return True
     return False
 
+def delete_item(item, name):
+    """
+    Delete an item from the database.
+    Args:
+        item: The item to be deleted.
+    """
+    if item:
+        db.session.delete(item)
+        db.session.commit()
+        return jsonify({'Message':
+                        name + '  successfully deleted '})
+    else:
+        return jsonify({'Message': 'The delete was unsuccessful.'})
+
 
 
 @auth.error_handler
 def unauthorized():
     """Alert user that a token is invalid"""
     return make_response(jsonify({'error': 'Invalid Token', 'code': 403}), 403)
+
+class SingleBucketList(Resource):
+    """
+    Manage responses to bucketlists requests.
+    URL:
+        /api/v1.0/bucketlists/<id>/
+    Methods:
+        GET, PUT, DELETE
+    """
+
+    @auth.login_required
+    def get(self, id):
+        """
+        Retrieve the bucketlist using an id.
+        Args:
+            id: The id of the bucketlist to be retrieved
+        Returns:
+            json: The bucketlist with the id.
+        """
+
+        bucketlist = BucketList.query.filter_by(created_by=g.user,
+                                                id=id).first()
+        if bucketlist:
+            return marshal(bucketlist, bucketlist_serializer)
+        else:
+            return {'Message': 'the bucketlist was not found.'}, 404
+
+    @auth.login_required
+    def put(self, id):
+        """
+        Update a bucketlist.
+        Args:
+            id: The id of the bucketlist to be updated
+        Returns:
+            json: response with success or failure message.
+        """
+        bucketlist = BucketList.query.filter_by(created_by=g.user,
+                                                id=id).first()
+        parser = reqparse.RequestParser()
+        parser.add_argument('list_name', required=True,
+                            help='list_name can not be blank')
+        args = parser.parse_args()
+        new_list_name = args['list_name']
+        if new_list_name:
+            bucketlist.list_name = new_list_name
+            db.session.add(bucketlist)
+            db.session.commit()
+            return jsonify({'Message': 'success',
+                            'list_name': bucketlist.list_name})
+        else:
+            return jsonify({'Message': 'Failure. Please provide a name for the'
+                            'bucketlist'})
+    @auth.login_required
+    def delete(self, id):
+        """
+        Delete a bucketlist.
+        Args:
+            id: The id of the bucketlist to be updated
+        Returns:
+            json: response with success or failure message.
+        """
+        bucketlist = BucketList.query.filter_by(created_by=g.user,
+                                                id=id).first()
+        if bucketlist:
+            return delete_item(bucketlist, bucketlist.list_name)
+        else:
+            return jsonify({'Message': 'The delete was unsuccessful.'})
 
 class BucketLists(Resource):
     """

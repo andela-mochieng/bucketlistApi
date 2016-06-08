@@ -31,16 +31,6 @@ class BucketListItem(db.Model):
         """Return a string representation of the user."""
         return '{}'.format(self.id)
 
-    def get(self):
-        return {
-            'id': self.id,
-            'item_name': self.list_name,
-            'item_description': self.item_description,
-            'done': self.done,
-            'created_by': self.created_by,
-            'date_created': self.date_created,
-            'date_modified': self.date_modified
-        }
 
 
 class BucketList(db.Model):
@@ -63,14 +53,7 @@ class BucketList(db.Model):
         """Return a string representation of the bucketlist."""
         return '<BucketList %r>' % self.id
 
-    def get(self):
-        return {
-            'id': self.id,
-            'list_name': self.list_name,
-            'created_by': self.created_by,
-            'date_created': self.date_created,
-            'date_modified': self.date_modified
-        }
+
 
 class User(db.Model):
     """
