@@ -1,13 +1,11 @@
-from collections import OrderedDict
 from flask_restful import reqparse, abort, Resource
 from flask.ext.restful import marshal
 from flask import g, jsonify, request, make_response
 from sqlalchemy.exc import IntegrityError
 from app import db
-from config import Config
 from config import config
 from app.models import BucketList, User, BucketListItem
-from serializers import bucketlist_serializer
+from serializers import bucketlist_serializer, bucketlistitem_serializer
 from flask_httpauth import HTTPTokenAuth
 from itsdangerous import (TimedJSONWebSignatureSerializer
                           as Serializer, BadSignature, SignatureExpired)
@@ -17,6 +15,8 @@ auth = HTTPTokenAuth(scheme='Token')
 
 @auth.verify_token
 def verify_token(token):
+    """Receives token and verifies it, the username and the password
+     must return True or False"""
     if token:
         token_serializer = Serializer(config['SECRET_KEY'])
         try:
@@ -133,8 +133,7 @@ class BucketLists(Resource):
                 filter_by(created_by=g.user, list_name=name).\
                 paginate(page, limit, False).items
             if results:
-                pass
-                # return results.get()
+                return results.get()
             else:
                 return {'Message':
                         'Bucketlist ' + name + ' not found.'}, 404
@@ -183,7 +182,6 @@ class BucketLists(Resource):
             print(list_name)
         except Exception as e:
             return {'error': str(e)}, 400
-        # import ipdb; ipdb.set_trace()
         if list_name == " " or list_name is None or not list_name:
             return abort(203, msg="Enter a bucketlist name")
         check_bucket_list_name = BucketList.query.filter_by(
@@ -196,8 +194,138 @@ class BucketLists(Resource):
                     list_name=list_name, created_by=g.user)
                 db.session.add(new_bucketlist)
                 db.session.commit()
-                # return new_bucketlist.get(), 201
-                return {'message': 'BucketList {} has been created'.format(new_bucketlist.get())}, 201
+                return {'message': 'BucketList {} has been created'.format(
+                    list_name)}, 201
+
+class BucketListItems(Resource):
+    """
+    Manage responses to bucketlist itemsrequests.
+    URL:
+        /api/v1.0/bucketlists/<id>/items/
+    Methods:
+        GET, POST
+    """
+
+    @auth.login_required
+    def get(self, id):
+        """
+        Retrieve bucketlist items.
+        Args:
+            id: The id of the bucketlist from which to retrieve items
+        Returns:
+            json: response with bucketlist items.
+        """
+        args = request.args.to_dict()
+        limit = int(args.get('limit', 0))
+        page = int(args.get('page', 0))
+        if limit and page:
+            bucketlistitems = BucketListItem.\
+                query.filter_by(bucketlist_id=id).\
+                paginate(page, limit, False).items
+        else:
+            bucketlistitems = BucketListItem.\
+                query.filter_by(bucketlist_id=id).all()
+        return marshal(bucketlistitems, bucketlistitem_serializer)
+
+    @auth.login_required
+    def post(self, id):
+        """
+        Add anitem to a bucketlist.
+        Args:
+            id: The id of the bucketlist to add item
+        Returns:
+            json: response with success message and item name.
+        """
+        parser = reqparse.RequestParser()
+        parser.add_argument('item_name', required=True,
+                            help='item_name can not be blank')
+        parser.add_argument('item_description', required=True,
+                            help='item_description can not be blank')
+        args = parser.parse_args()
+        item_name = args['item_name']
+        item_description = args['item_description']
+        done = False
+
+        if item_name and item_description:
+            bucketlistitem = BucketListItem(item_name=item_name,
+                                            item_description=item_description,
+                                            done=done,
+                                            bucketlist_id=id)
+            try:
+                db.session.add(bucketlistitem)
+                db.session.commit()
+                return {'item': marshal(bucketlistitem,
+                                        bucketlistitem_serializer)}, 201
+            except IntegrityError:
+                db.session.rollback()
+                return {'error': 'The bucketlist item already exists.'}
+
+
+class SingleBucketListItem(Resource):
+    """
+    Manage responses to bucketlist items requests.
+    URL:
+        /api/v1.0/bucketlist/<id>/items/
+    Methods:
+        GET, POST
+    """
+
+    @auth.login_required
+    def put(self, id, item_id):
+        """
+        Update a bucketlist item.
+        Args:
+            id: The id of the bucketlist with the item
+            item_id: The id of the item being updated
+        Returns:
+            json: A response with a success message.
+        """
+        try:
+            bucketlistitem = BucketListItem. \
+                query.filter_by(bucketlist_id=id, id=item_id).first()
+            parser = reqparse.RequestParser()
+            parser.add_argument('item_name')
+            parser.add_argument('item_description')
+            parser.add_argument('done')
+            args = parser.parse_args()
+            item_name = args['item_name']
+            item_description = args['item_description']
+            done = args['done']
+            if item_name:
+                bucketlistitem.item_name = item_name
+            if item_description:
+                bucketlistitem.item_description = item_description
+            if done:
+                if str(done).lower() == 'true':
+                    done = True
+                else:
+                    done = False
+                bucketlistitem.done = done
+            else:
+                return {'Message': 'No fields were changed.'}
+
+            db.session.add(bucketlistitem)
+            db.session.commit()
+            return jsonify({'Message': 'Successfully updated item.',
+                            'item_name': bucketlistitem.item_name})
+        except AttributeError:
+            return {'Message': 'No item matching the given id was found.'}
+
+    @auth.login_required
+    def delete(self, id, item_id):
+        """
+        Delete a bucketlist item.
+        Args:
+            id: The id of the bucketlist with the item
+            item_id: The id of the item being deleted
+        Returns:
+            json: A response with a success/ failure message.
+        """
+        bucketlistitem = BucketListItem. \
+            query.filter_by(bucketlist_id=id, id=item_id).first()
+        if bucketlistitem:
+            delete_item(bucketlistitem, bucketlistitem.item_name)
+
 
 
 
