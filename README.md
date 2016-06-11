@@ -26,9 +26,9 @@ The API resources are accessible at [localhost:8000/api/v1.0/](http://127.0.0.1:
 ###### The key **libraries** used include;
 1. **Flask-Restful** - a lightweight extension framework of flask that works with ORM and other libraries.to organise resources into class based views, to help serialize and display the API's models into response objects.
 2. **Flask-HttpAuth** - It handle client authentication for resources where public access is denied. This API improvises this library's @auth.verify_token annotation to authenticate users via tokens.
-3. SQLAlchemy-Paginator - A pagination library that receives an sqlalchemy query object as its first argument and a limit (results per page in int) as the second argument and creates a pagination object through which the query's content can be accessed through pages.
-4. itsdangerous - Generate tokens from users once they log in. It's also used to identify users from tokens when authentication (in methods annotated with @auth.login_verified) is required.
-5. Coverage - This package is used to execute the tests. It generates a test coverage report based on the lines of source code executed from the running tests.
+3. **SQLAlchemy-Paginator** - A pagination library that receives an sqlalchemy query object as its first argument and a limit (results per page in int) as the second argument and creates a pagination object through which the query's content can be accessed through pages.
+4. **itsdangerous** - Generate tokens from users once they log in. It's also used to identify users from tokens when authentication (in methods annotated with @auth.login_verified) is required.
+5. **Coverage** - This package is used to execute the tests. It generates a test coverage report based on the lines of source code executed from the running tests.
 
 ## Installation
 **__Clone this repo__**
