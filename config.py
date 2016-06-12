@@ -6,6 +6,7 @@ class Config:
     """Base configuration."""
 
     SQLALCHEMY_COMMIT_ON_TEARDOWN = True
+    # ITEMS_PER_PAGE = 20
 
 
 class DevConfig(Config):

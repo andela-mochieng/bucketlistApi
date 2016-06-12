@@ -22,9 +22,10 @@ class BucketListItem(db.Model):
     bucketlist_id = db.Column(db.Integer, db.ForeignKey(
         'bucketlists.id'), nullable=False)
 
-    def __init__(self, name, bucketlist_id):
+    def __init__(self, item_name, item_description, bucketlist_id, done=False):
         """Method used for instantiation of a BucketListItem Model"""
-        self.name = name
+        self.item_name = item_name
+        self.item_description = item_description
         self.bucketlist_id = bucketlist_id
 
     def __repr__(self):
@@ -44,7 +45,7 @@ class BucketList(db.Model):
     bucketlist_items = db.relationship(
         'BucketListItem', backref='bucketlist', lazy='dynamic')
     created_by = db.Column(
-        db.Integer, db.ForeignKey('user.id'), nullable=False)
+        db.Integer, db.ForeignKey('user.username'), nullable=False)
     date_created = db.Column(db.DateTime, index=True, default=datetime.utcnow)
     date_modified = db.Column(db.DateTime, default=db.func.current_timestamp(),
                               onupdate=db.func.current_timestamp())
@@ -68,6 +69,7 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True)
     password_hash = db.Column(db.String(128))
+    date_created = db.Column(db.DateTime, index=True, default=datetime.utcnow())
     bucketlists = db.relationship(
         'BucketList', backref='bucketlist_', lazy='dynamic')
 
@@ -131,8 +133,10 @@ class User(db.Model):
         """Return a string representation of the user."""
         return '<User %r>' % self.username
 
+
     def get(self):
         return {
             'id': self.id,
-            'username': self.username
+            'username': self.username,
+            'date_created': str(self.date_created)
         }

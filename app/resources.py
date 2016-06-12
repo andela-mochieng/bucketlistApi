@@ -376,7 +376,7 @@ class Login(Resource):
         if user and user.verify_password(args['password']):
             return {'Token': user.generate_auth_token()}, 200
         else:
-            abort(403, message='Invalid username or password')
+            abort(401, message='Invalid username or password')
 
 
 class Register(Resource):
@@ -402,7 +402,7 @@ class Register(Resource):
         except Exception as e:
             return {'error': str(e)}, 400
         if password == '' or username == '':
-            return {'error': "Kindly enter your username and password"}
+            abort (401, messages="Kindly enter your username and password")
         else:
             user = User.query.filter_by(username=username).first()
             if user is not None:
