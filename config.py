@@ -25,6 +25,7 @@ class TestConfig(Config):
     SQLALCHEMY_DATABASE_URI = os.environ.get('DEV_DATABASE_URL') or \
         'sqlite:///' + os.path.join(BASEDIR, 'test.sqlite')
     SQLALCHEMY_TRACK_MODIFICATIONS = True
+    PRESERVE_CONTEXT_ON_EXCEPTION = False
 
 
 class ProductionConfig(Config):
