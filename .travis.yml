@@ -5,9 +5,6 @@ python:
 install:
   - pip install -r requirements.txt
   - pip install coveralls
-branches:
-  only:
-  - BucketList
 # command to run tests
 script: "coverage run --omit='*virtualenv*' -m unittest discover"
 after_success: coveralls
