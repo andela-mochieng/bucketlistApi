@@ -5,3 +5,8 @@ omit=
     *site-packages/nose/*
     *__init__*
     *tests/*
+exclude_lines =
+    make_shell_context
+
+[html]
+directory = coverage_html
