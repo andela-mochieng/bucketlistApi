@@ -25,14 +25,15 @@ class BaseTestCase(TestCase):
 
     def request(self, method, url, auth=None, **kwargs):
         """method to use to represent Authorization means for the tests"""
-
+        print('kwti')
+        print(kwargs)
         headers = kwargs.get('headers', {})
         print('hearder')
         print(headers)
         if auth:
-            headers['Authorization'] = 'token ' + \
+            headers['Token'] = 'token ' + \
                 base64.b64encode(auth[0] + ':' + auth[1])
-
+        print('auth')
         kwargs['headers'] = headers
 
         return self.app.open(url, method=method, **kwargs)
