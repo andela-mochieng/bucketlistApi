@@ -17,7 +17,7 @@ api.add_resource(Home, '/', endpoint='home')
 api.add_resource(Login, '/auth/login/', endpoint='login')
 api.add_resource(Register, '/auth/register/', endpoint='register')
 api.add_resource(BucketLists, '/bucketlists/', endpoint='bucketlists')
-api.add_resource(SingleBucketList, '/bucketlist/<id>/', endpoint='bucketlist')
+api.add_resource(SingleBucketList, '/bucketlists/<id>/', endpoint='bucketlist')
 api.add_resource(SingleBucketListItem, '/bucketlists/<id>/items/<item_id>',
                  endpoint='bucketlistitem')
 api.add_resource(BucketListItems, '/bucketlists/<id>/items/',

@@ -86,16 +86,20 @@ class SingleBucketList(Resource):
         """
         bucketlist = BucketList.query.filter_by(created_by=g.user,
                                                 id=id).first()
+        print(dir(bucketlist))
         parser = reqparse.RequestParser()
         parser.add_argument('list_name', required=True,
                             help='list_name can not be blank')
         args = parser.parse_args()
+        print(dir(bucketlist))
         new_list_name = args['list_name']
         if new_list_name:
             bucketlist.list_name = new_list_name
+            print('jkl')
+            print(bucketlist.list_name)
             db.session.add(bucketlist)
             db.session.commit()
-            return jsonify({'Message': 'success',
+            return jsonify({'Message': 'Successfully created ',
                             'list_name': bucketlist.list_name})
         else:
             return jsonify({'Message': 'Failure. Please provide a name for the'
@@ -183,12 +187,12 @@ class BucketLists(Resource):
         except Exception as e:
             return {'error': str(e)}, 400
         if list_name == " " or list_name is None or not list_name:
-            return abort(203, msg="Enter a bucketlist name")
-        check_bucket_list_name = BucketList.query.filter_by(
-            list_name=list_name, created_by=g.user).first()
-        if check_bucket_list_name and check_bucket_list_name is not None:
-            return {'message': "bucket list : {} already exists".format(list_name)}, 203
-        else:
+            return { "message":"Enter a bucketlist name"}, 203
+        # check_bucket_list_name = BucketList.query.filter_by(
+        #     list_name=list_name, created_by=g.user).first()
+        # if check_bucket_list_name and check_bucket_list_name is not None:
+        #     return {'message': "bucket list : {} already exists".format(list_name)}, 203
+        try:
             if list_name:
                 new_bucketlist = BucketList(
                     list_name=list_name, created_by=g.user)
@@ -196,6 +200,10 @@ class BucketLists(Resource):
                 db.session.commit()
                 return {'message': 'BucketList {} has been created'.format(
                     list_name)}, 201
+        except IntegrityError:
+            db.session.rollback()
+            return {'message': "Bucket list : {} already exists".format(
+                list_name)}, 203
 
 class BucketListItems(Resource):
     """
