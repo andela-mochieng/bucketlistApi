@@ -49,17 +49,16 @@ class RegistrationTest(BaseTestCase):
 class LoginTests(BaseTestCase):
     """This class contains all tests for user login"""
 
-    # def test_users_can_not_sign_in_when_they_provide_wrong_info(self):
-    #     """tests that user can not login
-    #     when wrong info is sent"""
-    #     user = User(username='Margie', password='1234')
-    #     import ipdb; ipdb.set_trace()
-    #     db.session.add(user)
-    #     db.session.commit()
-    #     response = self.request('POST', url_for(
-    #         'login'), data=json.dumps({'username':'Presho', 'password':'1234'}),content_type='application/json')
-    #     self.assertIn("he username or password was invalid", response.data)
-    #     self.assertEqual(response.status_code, 401)
+    def test_users_can_not_sign_in_when_they_provide_wrong_info(self):
+        """tests that user can not login
+        when wrong info is sent"""
+        user = User(username='Margie', password='1234')
+        db.session.add(user)
+        db.session.commit()
+        response = self.request('POST', url_for(
+            'login'), data=json.dumps({'username':'Presho', 'password':'1234'}),content_type='application/json')
+        self.assertIn("Invalid username or password", response.data)
+        self.assertEqual(response.status_code, 401)
 
     def test_users_can_not_sign_in_when_they_provide_no_info(self):
         """tests that user can not login

@@ -206,7 +206,7 @@ class BucketLists(Resource):
 
 class BucketListItems(Resource):
     """
-    Manage responses to bucketlist itemsrequests.
+    Manage responses to bucketlist items requests.
     URL:
         /api/v1.0/bucketlists/<id>/items/
     Methods:
@@ -310,6 +310,8 @@ class SingleBucketListItem(Resource):
             item_name = args['item_name']
             item_description = args['item_description']
             done = args['done']
+            if item_name == '' or item_name is None:
+                return {'error': 'Please enter a item name'}, 203
             if item_name:
                 bucketlistitem.item_name = item_name
             if item_description:
@@ -321,14 +323,14 @@ class SingleBucketListItem(Resource):
                     done = False
                 bucketlistitem.done = done
             else:
-                return {'Message': 'No fields were changed.'}
+                return {'Message': 'No fields were changed.'}, 203
 
             db.session.add(bucketlistitem)
             db.session.commit()
-            return jsonify({'Message': 'Successfully updated item.',
-                            'item_name': bucketlistitem.item_name})
+            return {'Message': 'Successfully updated item.',
+                            'item_name': bucketlistitem.item_name}, 200
         except AttributeError:
-            return {'Message': 'No item matching the given id was found.'}
+            return {'Message': 'No item matching the given id was found.'}, 203
 
     @auth.login_required
     def delete(self, id, item_id):
@@ -347,7 +349,7 @@ class SingleBucketListItem(Resource):
             db.session.commit()
             return {
                 'message': "Successfully deleted the bucket list item: {}".format(
-                    bucketlistitem.item_name)}
+                    bucketlistitem.item_name)}, 200
 
 
 
@@ -362,7 +364,6 @@ class Home(Resource):
     Requests Allowed:
         GET
     """
-
     def get(self):
         """
         Returns:
