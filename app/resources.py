@@ -37,6 +37,7 @@ def delete_item(item, name):
     if item:
         db.session.delete(item)
         db.session.commit()
+        print("delete")
         return jsonify({'Message':
                         name + '  successfully deleted '})
     else:
@@ -95,11 +96,9 @@ class SingleBucketList(Resource):
         new_list_name = args['list_name']
         if new_list_name:
             bucketlist.list_name = new_list_name
-            print('jkl')
-            print(bucketlist.list_name)
             db.session.add(bucketlist)
             db.session.commit()
-            return jsonify({'Message': 'Successfully created ',
+            return jsonify({'Message': 'Successfully updated bucketlist ',
                             'list_name': bucketlist.list_name})
         else:
             return jsonify({'Message': 'Failure. Please provide a name for the'
@@ -116,7 +115,11 @@ class SingleBucketList(Resource):
         bucketlist = BucketList.query.filter_by(created_by=g.user,
                                                 id=id).first()
         if bucketlist:
-            return delete_item(bucketlist, bucketlist.list_name)
+            db.session.delete(bucketlist)
+            db.session.commit()
+            return {
+                'message': "Successfully deleted the bucket list item: {}".format(
+                    bucketlist.list_name)}
         else:
             return jsonify({'Message': 'The delete was unsuccessful.'})
 
@@ -188,10 +191,6 @@ class BucketLists(Resource):
             return {'error': str(e)}, 400
         if list_name == " " or list_name is None or not list_name:
             return { "message":"Enter a bucketlist name"}, 203
-        # check_bucket_list_name = BucketList.query.filter_by(
-        #     list_name=list_name, created_by=g.user).first()
-        # if check_bucket_list_name and check_bucket_list_name is not None:
-        #     return {'message': "bucket list : {} already exists".format(list_name)}, 203
         try:
             if list_name:
                 new_bucketlist = BucketList(
@@ -233,7 +232,10 @@ class BucketListItems(Resource):
         else:
             bucketlistitems = BucketListItem.\
                 query.filter_by(bucketlist_id=id).all()
-        return marshal(bucketlistitems, bucketlistitem_serializer)
+            if bucketlistitems:
+                return marshal(bucketlistitems, bucketlistitem_serializer)
+            else:
+                return {"message": "there are no items under this bucket list"}, 203
 
     @auth.login_required
     def post(self, id):
@@ -273,10 +275,19 @@ class SingleBucketListItem(Resource):
     """
     Manage responses to bucketlist items requests.
     URL:
-        /api/v1.0/bucketlist/<id>/items/
+        /api/v1.0/bucketlist/<id>/items/<item_id>
     Methods:
-        GET, POST
+        GET, POST, DELETE
     """
+
+    @auth.login_required
+    def get(self, id, item_id):
+        """Method to handle all get requests to the route"""
+        get_bucket_list_item = BucketListItem.query.filter_by(
+            bucketlist_id=id, id=item_id).all()
+        if get_bucket_list_item:
+            return {'item': marshal(get_bucket_list_item, bucketlistitem_serializer)}, 200
+        return {'message': "Item with id: {} doesn't exist".format(id)}, 203
 
     @auth.login_required
     def put(self, id, item_id):
@@ -332,7 +343,11 @@ class SingleBucketListItem(Resource):
         bucketlistitem = BucketListItem. \
             query.filter_by(bucketlist_id=id, id=item_id).first()
         if bucketlistitem:
-            delete_item(bucketlistitem, bucketlistitem.item_name)
+            db.session.delete(bucketlistitem)
+            db.session.commit()
+            return {
+                'message': "Successfully deleted the bucket list item: {}".format(
+                    bucketlistitem.item_name)}
 
 
 

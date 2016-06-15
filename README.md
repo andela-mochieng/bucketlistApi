@@ -94,7 +94,8 @@ Response: {
 
 **__Add Bucketlist__**
 
-Navigate to http://localhost:5000/api/v1.0/bucketlists/.
+Navigate to http://localhost:5000/api/v1.0/bucketlists/
+
 + Set request method to POST
 + Make sure the token is set in the Header if you have logged in
 **eg.** request : { "list_name": "Bucketlist 1" }
@@ -132,6 +133,7 @@ response : {
 
 **__View  a single bucketlist__**
 **e.g**request: Navigate to http://localhost:5000/api/v1.0/bucketlist/1/
+
 + Set request method to GET
 ```shell
 $ response : {

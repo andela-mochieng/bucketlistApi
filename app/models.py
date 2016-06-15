@@ -5,7 +5,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import (TimedJSONWebSignatureSerializer
                           as Serializer, BadSignature, SignatureExpired)
 from config import config
-
+from sqlalchemy import UniqueConstraint
 
 
 class BucketListItem(db.Model):
@@ -40,12 +40,14 @@ class BucketList(db.Model):
     """
 
     __tablename__ = 'bucketlists'
+    __table_args__ = (UniqueConstraint('list_name', 'created_by'),)
     id = db.Column(db.Integer, primary_key=True)
-    list_name = db.Column(db.String(100), unique=True)
+    list_name = db.Column(db.String(100))
+
     bucketlist_items = db.relationship(
         'BucketListItem', backref='bucketlist', lazy='dynamic')
     created_by = db.Column(
-        db.Integer, db.ForeignKey('user.username'), nullable=False)
+        db.Integer, db.ForeignKey('user.id'), nullable=False)
     date_created = db.Column(db.DateTime, index=True, default=datetime.utcnow)
     date_modified = db.Column(db.DateTime, default=db.func.current_timestamp(),
                               onupdate=db.func.current_timestamp())

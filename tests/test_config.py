@@ -1,4 +1,5 @@
 from flask.ext.testing import TestCase
+from flask import url_for
 from manage import db, app
 from config import config
 import json
@@ -17,6 +18,26 @@ class BaseTestCase(TestCase):
         """setUp method"""
         self.app = self.create_app().test_client()
         db.create_all()
+        resp_register = self.client.post(url_for('register'),
+                                         data=json.dumps({'username':'Test',
+                                                       'password':'1234'}),
+                                         content_type="application/json")
+        # print resp_register.json.get('id')
+        response = self.client.post(url_for(
+            'login'), data=json.dumps({'username':'Test',
+                                                       'password':'1234'}),
+                                         content_type="application/json")
+        token = response.json
+        self.token =  {'Authorization': 'token ' + token['Token']}
+
+        self.bl_name = 'Bucketlist 1'
+
+        new_bucketlist = self.client.post(url_for('bucketlists'),
+            data=json.dumps({'list_name': self.bl_name,
+              'created_by': resp_register.json.get('id')}),
+            headers=self.token,
+            content_type="application/json")
+
 
     def tearDown(self):
         """Clearing all settings"""
