@@ -266,6 +266,7 @@ class BucketListItems(Resource):
                 db.session.commit()
                 return {'item': marshal(bucketlistitem,
                                         bucketlistitem_serializer)}, 201
+               
             except IntegrityError:
                 db.session.rollback()
                 return {'error': 'The bucketlist item already exists.'}
