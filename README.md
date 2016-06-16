@@ -2,7 +2,7 @@
 [![Coverage Status](https://coveralls.io/repos/github/andela-mochieng/bucketlistApi/badge.svg?branch=develop)](https://coveralls.io/github/andela-mochieng/bucketlistApi?branch=develop)
 ![alt text](https://img.shields.io/badge/python-2.7-blue.svg)
 
-# _Intoduction to a Bucketlist Api_
+# _Bucketlist API_
 This is a bucketlist Api that exists for one reason, which to get you writing the list of things that you want to achieve or just get done before dying.
 
 ### Bucketlist's resources
@@ -13,9 +13,14 @@ The API resources are accessible at [localhost:8000/api/v1.0/](http://127.0.0.1:
 | `/api/v1.0/` | GET  | The index |
 | `/api/v1.0/auth/register/` | POST  | User registration |
 |  `/api/v1.0/auth/login/` | POST | User login|
-| `/api/v1.0/bucketlists/` | GET, POST | A user's bucket lists |
-| `/api/v1.0/bucketlist/<id>/` | GET, PUT, DELETE | A single bucket list |
-| `/api/v1.0/bucketlists/<id>/items/` | GET, POST | Items in a bucket list |
+| `/api/v1.0/bucketlists/` | POST | Create a bucket list |
+| `/api/v1.0/bucketlists/` | GET | Retrieve all bucketlists |
+| `/api/v1.0/bucketlists/?limit=1&page=1` | GET | Retrieve one bucketlist per page|
+| `/api/v1.0/bucketlists/<id>/` | GET |  A single bucket list |
+| `/api/v1.0/bucketlists/<id>/` | PUT | Update a single bucket list |
+| `/api/v1.0/bucketlists/<id>/` | DELETE | Delete a single bucket list |
+| `/api/v1.0/bucketlists/<id>/items/` | POST |  Create items in a bucket list |
+| `/api/v1.0/bucketlists/<id>/items/` | GET | Items in a bucket list |
 | GET `/api/v1.0/bucketlists/<id>/items/<item_id>/` | GET, PUT, DELETE| A single bucket list item|
 
 
@@ -39,27 +44,25 @@ The API resources are accessible at [localhost:8000/api/v1.0/](http://127.0.0.1:
 ```shell
 $ git clone https://github.com/andela-mochieng/bucketlistApi.git
 ```
-**__Fetch from develop-branch__**
-```shell
-$ git checkout develop
-```
+
 **__Nagivate to the root folder__**
 ```shell
 $ cd bucketlistApi
 ```
+
 **__Set up a virtualenv then:__**
 ```shell
 $ pip install -r requirements.txt
 $ python manage.py db init
 $ python manage.py db migrate
 $ python manage.py db upgrade
-$ python manage.py db runserver
+$ python manage.py runserver
 Success message: Running on http://127.0.0.1:5000/ should appear then your set.
 ```
 
 
 ## Setting up
-+ Once the server is runing, navigate to http://localhost:5000 using Postman.
++ Once the server is runing, navigate to http://localhost:5000//api/v1.0/ using Postman.
 + Click the header tab and set the Header to content_type: application/json.
 + Click the body tab and select on the raw option.
 + We shall be using this section for most of our requests.
@@ -136,7 +139,7 @@ response : {
 ```
 
 **__View  a single bucketlist__**
-**e.g**request: Navigate to http://localhost:5000/api/v1.0/bucketlist/1/
+**e.g** request: Navigate to http://localhost:5000/api/v1.0/bucketlist/1/
 
 + Set request method to GET
 ```shell
@@ -148,4 +151,9 @@ $ response : {
   "list_name": "Fly an aeroplane"
 }
 ```
- more details to be added
+Continue using the API endpoints from the table above to test the bucketlist.
+
+To run tests:
+```shell
+$ nosetests --with-coverage
+```
