@@ -76,3 +76,17 @@ class TestBucketListItems(BaseTestCase):
         """Test unauthorised access."""
         resp = self.client.get('/api/v1.0/bucketlists/1/items/')
         self.assert403(resp)
+
+    def test_that_a_list_is_not_updated_when_similar_items_are_submittted(
+        self):
+        """Test_that_a_list_is_not_updated_when_similar_items_are_submittted."""
+        self.create_bucketlist()
+        self.create_bucketlist_item()
+        data = {'item_name': 'bucketlist_item one',
+                'item_description': 'First item description'}
+
+        response = self.client.put('/api/v1.0/bucketlists/1/items/1',
+                                   data=data,
+                                   headers=self.token)
+        self.assertEqual(response.status_code, 203)
+        self.assertIn("No fields were changed", response.data)
