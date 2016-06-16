@@ -17,6 +17,7 @@ class TestBucketListItems(BaseTestCase):
         return False
 
     def create_bucketlist_item(self):
+        """Creation of a bucket list item called by other tests"""
         resp_items=self.client.post('/api/v1.0/bucketlists/1/items/',
                                 data=json.dumps(
                                     {'item_name': 'bucketlist item 1',
