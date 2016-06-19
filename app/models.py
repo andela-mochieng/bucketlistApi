@@ -5,16 +5,16 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import (TimedJSONWebSignatureSerializer
                           as Serializer, BadSignature, SignatureExpired)
 from config import config
-from sqlalchemy import UniqueConstraint
 
 
 class BucketListItem(db.Model):
     """Define items in a user's bucketlist."""
 
     __tablename__ = "bucketlistitems"
+    __table_args__ = (db.UniqueConstraint('item_name', 'bucketlist_id'),)
     id = db.Column(db.Integer, primary_key=True)
-    item_name = db.Column(db.String(256), unique=True)
-    item_description = db.Column(db.String(256), unique=True)
+    item_name = db.Column(db.String(256))
+    item_description = db.Column(db.String(256))
     done = db.Column(db.Boolean(), default=False, index=True)
     date_created = db.Column(db.DateTime, index=True, default=datetime.utcnow)
     date_modified = db.Column(db.DateTime, default=db.func.current_timestamp(),
@@ -40,7 +40,7 @@ class BucketList(db.Model):
     """
 
     __tablename__ = 'bucketlists'
-    __table_args__ = (UniqueConstraint('list_name', 'created_by'),)
+    __table_args__ = (db.UniqueConstraint('list_name', 'created_by'),)
     id = db.Column(db.Integer, primary_key=True)
     list_name = db.Column(db.String(100))
 
@@ -51,6 +51,7 @@ class BucketList(db.Model):
     date_created = db.Column(db.DateTime, index=True, default=datetime.utcnow)
     date_modified = db.Column(db.DateTime, default=db.func.current_timestamp(),
                               onupdate=db.func.current_timestamp())
+
 
     def __repr__(self):
         """Return a string representation of the bucketlist."""
@@ -109,7 +110,7 @@ class User(db.Model):
         """
         token_serializer = Serializer(config['SECRET_KEY'],
                                       expires_in=expiration)
-        return token_serializer.dumps({'id': self.id})
+        return token_serializer.dumps({'id': self.id, 'username':self.username})
 
     @staticmethod
     def verify_auth_token(token):

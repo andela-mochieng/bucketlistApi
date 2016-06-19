@@ -9,6 +9,7 @@ from serializers import bucketlist_serializer, bucketlistitem_serializer
 from flask_httpauth import HTTPTokenAuth
 from itsdangerous import (TimedJSONWebSignatureSerializer
                           as Serializer, BadSignature, SignatureExpired)
+import json
 
 auth = HTTPTokenAuth(scheme='Token')
 
@@ -24,24 +25,10 @@ def verify_token(token):
         except (SignatureExpired, BadSignature):
             return False
         if 'id' in data:
-            g.user = data['id']
+            g.user_id = data['id']
+            g.user = data['username']
             return True
     return False
-
-def delete_item(item, name):
-    """
-    Delete an item from the database.
-    Args:
-        item: The item to be deleted.
-    """
-    if item:
-        db.session.delete(item)
-        db.session.commit()
-        print("delete")
-        return jsonify({'Message':
-                        name + '  successfully deleted '})
-    else:
-        return jsonify({'Message': 'The delete was unsuccessful.'})
 
 
 
@@ -87,7 +74,6 @@ class SingleBucketList(Resource):
         """
         bucketlist = BucketList.query.filter_by(created_by=g.user,
                                                 id=id).first()
-        print(dir(bucketlist))
         parser = reqparse.RequestParser()
         parser.add_argument('list_name', required=True,
                             help='list_name can not be blank')
@@ -136,14 +122,14 @@ class BucketLists(Resource):
         page = int(args.get('page', 1))
         name = args.get('q')
         if name:
-            results = BucketList.query.\
-                filter_by(created_by=g.user, list_name=name).\
+            results = BucketList.query. \
+                filter_by(created_by=g.user, list_name=name). \
                 paginate(page, limit, False).items
             if results:
-                return results.get()
+                return marshal(results, bucketlist_serializer)
             else:
                 return {'Message':
-                        'Bucketlist ' + name + ' not found.'}, 404
+                            'Bucketlist ' + name + ' not found.'}, 404
         if args.keys().__contains__('q'):
             return jsonify({'Message': 'Please provide a search parameter'})
 
@@ -228,7 +214,7 @@ class BucketListItems(Resource):
         if limit and page:
             bucketlistitems = BucketListItem.\
                 query.filter_by(bucketlist_id=id).\
-                paginate(page, limit, False).items
+                paginate(page, limit, False).all()
         else:
             bucketlistitems = BucketListItem.\
                 query.filter_by(bucketlist_id=id).all()
@@ -259,14 +245,13 @@ class BucketListItems(Resource):
         if item_name and item_description:
             bucketlistitem = BucketListItem(item_name=item_name,
                                             item_description=item_description,
-                                            done=done,
-                                            bucketlist_id=id)
+                                            done=done, bucketlist_id=g.user_id)
             try:
                 db.session.add(bucketlistitem)
                 db.session.commit()
                 return {'item': marshal(bucketlistitem,
                                         bucketlistitem_serializer)}, 201
-               
+
             except IntegrityError:
                 db.session.rollback()
                 return {'error': 'The bucketlist item already exists.'}
