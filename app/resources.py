@@ -56,9 +56,10 @@ class SingleBucketList(Resource):
             json: The bucketlist with the id.
         """
 
-        bucketlist = BucketList.query.filter_by(created_by=g.user_id,
+        bucketlist = BucketList.query.filter_by(created_by=g.user,
                                                 id=id).first()
         if bucketlist:
+            print(dir(marshal))
             return marshal(bucketlist, bucketlist_serializer)
         else:
             return {'Message': 'the bucket list was not found.'}, 404
@@ -124,7 +125,6 @@ class BucketLists(Resource):
             results = BucketList.query. \
                 filter_by(created_by=g.user, list_name=name). \
                 paginate(page, limit, False).items
-
             if results:
                 return marshal(results, bucketlist_serializer)
             else:
@@ -150,7 +150,9 @@ class BucketLists(Resource):
         else:
             previous_page = 'None'
         bucketlists = bucketlists_page.items
-
+        print(bucketlists)
+        for b in bucketlists:
+            print(b.bucketlist_items)
         re_quest = {'bucketlists': marshal(bucketlists, bucketlist_serializer),
                  'next_item': next_item,
                  'pages': total,

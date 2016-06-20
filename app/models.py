@@ -11,7 +11,7 @@ class BucketListItem(db.Model):
     """Define items in a user's bucketlist."""
 
     __tablename__ = "bucketlistitems"
-    __table_args__ = (db.UniqueConstraint('item_name', 'bucketlist_id'),)
+    # __table_args__ = (db.UniqueConstraint('item_name', 'bucketlist_id'),)
     id = db.Column(db.Integer, primary_key=True)
     item_name = db.Column(db.String(256))
     item_description = db.Column(db.String(256))
@@ -22,11 +22,11 @@ class BucketListItem(db.Model):
     bucketlist_id = db.Column(db.Integer, db.ForeignKey(
         'bucketlists.id'), nullable=False)
 
-    def __init__(self, item_name, item_description, bucketlist_id, done=False):
-        """Method used for instantiation of a BucketListItem Model"""
-        self.item_name = item_name
-        self.item_description = item_description
-        self.bucketlist_id = bucketlist_id
+    # def __init__(self, item_name, item_description, bucketlist_id, done=False):
+    #     """Method used for instantiation of a BucketListItem Model"""
+    #     self.item_name = item_name
+    #     self.item_description = item_description
+    #     self.bucketlist_id = bucketlist_id
 
     def __repr__(self):
         """Return a string representation of the user."""
@@ -45,7 +45,7 @@ class BucketList(db.Model):
     list_name = db.Column(db.String(100))
 
     bucketlist_items = db.relationship(
-        'BucketListItem', backref='bucketlist', lazy='dynamic')
+        'BucketListItem', backref='bucketlist')
     created_by = db.Column(
         db.Integer, db.ForeignKey('user.id'), nullable=False)
     date_created = db.Column(db.DateTime, index=True, default=datetime.utcnow)

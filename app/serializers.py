@@ -13,7 +13,7 @@ bucketlistitem_serializer = {
 bucketlist_serializer = {
     'id': fields.Integer,
     'list_name': fields.String,
-    'items':fields.Nested(bucketlistitem_serializer),
+    'bucketlist_items': fields.Nested(bucketlistitem_serializer),
     'created_by': fields.String,
     'date_created': fields.DateTime,
     'date_modified': fields.DateTime
