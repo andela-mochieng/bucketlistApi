@@ -1,15 +1,15 @@
+import json
 from flask_restful import reqparse, abort, Resource
 from flask.ext.restful import marshal
 from flask import g, jsonify, request, make_response
 from sqlalchemy.exc import IntegrityError
+from flask_httpauth import HTTPTokenAuth
+from itsdangerous import (TimedJSONWebSignatureSerializer
+                          as Serializer, BadSignature, SignatureExpired)
 from app import db
 from config import config
 from app.models import BucketList, User, BucketListItem
 from serializers import bucketlist_serializer, bucketlistitem_serializer
-from flask_httpauth import HTTPTokenAuth
-from itsdangerous import (TimedJSONWebSignatureSerializer
-                          as Serializer, BadSignature, SignatureExpired)
-import json
 
 auth = HTTPTokenAuth(scheme='Token')
 
@@ -56,12 +56,12 @@ class SingleBucketList(Resource):
             json: The bucketlist with the id.
         """
 
-        bucketlist = BucketList.query.filter_by(created_by=g.user,
+        bucketlist = BucketList.query.filter_by(created_by=g.user_id,
                                                 id=id).first()
         if bucketlist:
             return marshal(bucketlist, bucketlist_serializer)
         else:
-            return {'Message': 'the bucketlist was not found.'}, 404
+            return {'Message': 'the bucket list was not found.'}, 404
 
     @auth.login_required
     def put(self, id):
@@ -78,7 +78,6 @@ class SingleBucketList(Resource):
         parser.add_argument('list_name', required=True,
                             help='list_name can not be blank')
         args = parser.parse_args()
-        print(dir(bucketlist))
         new_list_name = args['list_name']
         if new_list_name:
             bucketlist.list_name = new_list_name
@@ -125,6 +124,7 @@ class BucketLists(Resource):
             results = BucketList.query. \
                 filter_by(created_by=g.user, list_name=name). \
                 paginate(page, limit, False).items
+
             if results:
                 return marshal(results, bucketlist_serializer)
             else:
@@ -151,13 +151,13 @@ class BucketLists(Resource):
             previous_page = 'None'
         bucketlists = bucketlists_page.items
 
-        quest = {'bucketlists': marshal(bucketlists, bucketlist_serializer),
+        re_quest = {'bucketlists': marshal(bucketlists, bucketlist_serializer),
                  'next_item': next_item,
                  'pages': total,
                  'previous_page': previous_page,
                  'next_page': next_page
                  }
-        return quest
+        return re_quest
 
     @auth.login_required
     def post(self):
@@ -226,7 +226,7 @@ class BucketListItems(Resource):
     @auth.login_required
     def post(self, id):
         """
-        Add anitem to a bucketlist.
+        Add an item to a bucketlist.
         Args:
             id: The id of the bucketlist to add item
         Returns:
@@ -245,7 +245,7 @@ class BucketListItems(Resource):
         if item_name and item_description:
             bucketlistitem = BucketListItem(item_name=item_name,
                                             item_description=item_description,
-                                            done=done, bucketlist_id=g.user_id)
+                                            done=done, bucketlist_id=id)
             try:
                 db.session.add(bucketlistitem)
                 db.session.commit()
