@@ -1,7 +1,7 @@
 [![Build Status](https://travis-ci.org/andela-mochieng/bucketlistApi.svg?branch=develop)](https://travis-ci.org/andela-mochieng/bucketlistApi)
 [![Coverage Status](https://coveralls.io/repos/github/andela-mochieng/bucketlistApi/badge.svg?branch=develop)](https://coveralls.io/github/andela-mochieng/bucketlistApi?branch=develop)
 ![alt text](https://img.shields.io/badge/python-2.7-blue.svg)
-
+[![license](https://img.shields.io/github/license/mashape/apistatus.svg?maxAge=2592000)]()
 # _Bucketlist API_
 This is a bucketlist Api that exists for one reason, which to get you writing the list of things that you want to achieve or just get done before dying.
 
