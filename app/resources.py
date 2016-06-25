@@ -31,11 +31,11 @@ def verify_token(token):
     return False
 
 
-
 @auth.error_handler
 def unauthorized():
     """Alert user that a token is invalid"""
     return make_response(jsonify({'error': 'Invalid Token', 'code': 403}), 403)
+
 
 class SingleBucketList(Resource):
     """
@@ -59,7 +59,6 @@ class SingleBucketList(Resource):
         bucketlist = BucketList.query.filter_by(created_by=g.user,
                                                 id=id).first()
         if bucketlist:
-            print(dir(marshal))
             return marshal(bucketlist, bucketlist_serializer)
         else:
             return {'Message': 'the bucket list was not found.'}, 404
@@ -89,6 +88,7 @@ class SingleBucketList(Resource):
         else:
             return jsonify({'Message': 'Failure. Please provide a name for the'
                             'bucketlist'})
+
     @auth.login_required
     def delete(self, id):
         """
@@ -108,6 +108,7 @@ class SingleBucketList(Resource):
                     bucketlist.list_name)}
         else:
             return jsonify({'Message': 'The delete was unsuccessful.'})
+
 
 class BucketLists(Resource):
     """
@@ -129,7 +130,7 @@ class BucketLists(Resource):
                 return marshal(results, bucketlist_serializer)
             else:
                 return {'Message':
-                            'Bucketlist ' + name + ' not found.'}, 404
+                        'Bucketlist ' + name + ' not found.'}, 404
         if args.keys().__contains__('q'):
             return jsonify({'Message': 'Please provide a search parameter'})
 
@@ -154,11 +155,11 @@ class BucketLists(Resource):
         for b in bucketlists:
             print(b.bucketlist_items)
         re_quest = {'bucketlists': marshal(bucketlists, bucketlist_serializer),
-                 'next_item': next_item,
-                 'pages': total,
-                 'previous_page': previous_page,
-                 'next_page': next_page
-                 }
+                    'next_item': next_item,
+                    'pages': total,
+                    'previous_page': previous_page,
+                    'next_page': next_page
+                    }
         return re_quest
 
     @auth.login_required
@@ -174,11 +175,10 @@ class BucketLists(Resource):
                                 help='list_name can not be blank')
             args = parser.parse_args()
             list_name = args['list_name']
-            print(list_name)
         except Exception as e:
             return {'error': str(e)}, 400
         if list_name == " " or list_name is None or not list_name:
-            return { "message":"Enter a bucketlist name"}, 203
+            return {"message": "Enter a bucketlist name"}, 203
         try:
             if list_name:
                 new_bucketlist = BucketList(
@@ -191,6 +191,7 @@ class BucketLists(Resource):
             db.session.rollback()
             return {'message': "Bucket list : {} already exists".format(
                 list_name)}, 203
+
 
 class BucketListItems(Resource):
     """
@@ -316,7 +317,7 @@ class SingleBucketListItem(Resource):
             db.session.add(bucketlistitem)
             db.session.commit()
             return {'Message': 'Successfully updated item.',
-                            'item_name': bucketlistitem.item_name}, 200
+                    'item_name': bucketlistitem.item_name}, 200
         except AttributeError:
             return {'Message': 'No item matching the given id was found.'}, 203
 
@@ -340,8 +341,6 @@ class SingleBucketListItem(Resource):
                     bucketlistitem.item_name)}, 200
 
 
-
-
 class Home(Resource):
     """
     Handles requests to home route.
@@ -352,6 +351,7 @@ class Home(Resource):
     Requests Allowed:
         GET
     """
+
     def get(self):
         """
         Returns:
@@ -414,7 +414,7 @@ class Register(Resource):
         except Exception as e:
             return {'error': str(e)}, 400
         if password == '' or username == '':
-            abort (401, messages="Kindly enter your username and password")
+            abort(401, messages="Kindly enter your username and password")
         else:
             user = User.query.filter_by(username=username).first()
             if user is not None:
