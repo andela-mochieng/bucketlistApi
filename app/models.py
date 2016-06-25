@@ -105,8 +105,6 @@ class User(db.Model):
         return token_serializer.dumps(
             {'id': self.id, 'username': self.username})
 
-    #
-
     def __repr__(self):
         """Return a string representation of the user."""
         return '<User %r>' % self.username

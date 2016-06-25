@@ -22,4 +22,4 @@ def make_app(config_name):
 
     return app
 
-create_app = make_app('development')
+app = make_app('development')
