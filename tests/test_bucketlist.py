@@ -31,7 +31,7 @@ class BucketListTest(BaseTestCase):
                                     data=data,
                                     headers=self.token
                                     )
-        self.assertEqual(response.status_code, 203)
+        self.assertEqual(response.status_code, 400)
         self.assertIn("Enter a bucketlist name", response.data)
 
     def test_bucket_list_creation_fails_when_same_bucket_list_is_provided(self):
@@ -41,9 +41,9 @@ class BucketListTest(BaseTestCase):
                                                      'created_by': 2}),
                                     headers=self.token,
                                     content_type="application/json")
-        self.assertEqual(response.status_code, 203)
+        self.assertEqual(response.status_code, 200)
         self.assertIn(
-            "Bucket list : Bucketlist 1 already exists", response.data)
+            "Bucket list : Bucketlist 1 not modified", response.data)
 
     def test_retrieval_of_bucket_lists(self):
         """tests that there exists bucket-lists"""

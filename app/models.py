@@ -23,7 +23,8 @@ class BucketListItem(db.Model):
         'bucketlists.id'), nullable=False)
 
     def __repr__(self):
-        """Return a string representation of the user."""
+        """Return a string representation of the bucketlist item is
+                                  as Serializer, BadSignature, SignatureExpired)."""
         return '{}'.format(self.id)
 
 
