@@ -105,23 +105,7 @@ class User(db.Model):
         return token_serializer.dumps(
             {'id': self.id, 'username': self.username})
 
-    @staticmethod
-    def verify_auth_token(token):
-        """
-        Verifies tokens
-        Args:
-            token: The token to be verified
-        Returns:
-            The user whose id is in the decoded token
-        """
-        token_serializer = Serializer(config['SECRET_KEY'])
-        try:
-            data = token_serializer.loads(token)
-        except (SignatureExpired, BadSignature):
-            return {'error': 'The token is invalid'}
-        user = User.query.get(data['id'])
-
-        return user
+    #
 
     def __repr__(self):
         """Return a string representation of the user."""
