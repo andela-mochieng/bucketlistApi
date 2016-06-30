@@ -36,6 +36,6 @@ class ProductionConfig(Config):
 config = {
     'development': DevConfig,
     'testing': TestConfig,
-    'Production': ProductionConfig,
+    'production': ProductionConfig,
     'SECRET_KEY': 'RAINSECRETKEY'
 }

@@ -20,8 +20,7 @@ The API resources are accessible at [localhost:8000/api/v1.0/](http://127.0.0.1:
 | `/api/v1.0/bucketlists/<id>/` | PUT | Update a single bucket list |
 | `/api/v1.0/bucketlists/<id>/` | DELETE | Delete a single bucket list |
 | `/api/v1.0/bucketlists/<id>/items/` | POST |  Create items in a bucket list |
-| `/api/v1.0/bucketlists/<id>/items/` | GET | Items in a bucket list |
-| GET `/api/v1.0/bucketlists/<id>/items/<item_id>/` | GET, PUT, DELETE| A single bucket list item|
+| GET `/api/v1.0/bucketlists/<id>/items/<item_id>/` | PUT, DELETE| A single bucket list item|
 
 
 | Method | Description |
