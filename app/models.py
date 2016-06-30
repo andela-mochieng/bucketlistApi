@@ -74,7 +74,7 @@ class User(db.Model):
     password_hash = db.Column(db.String(128))
     date_created = db.Column(db.DateTime, index=True, default=datetime.utcnow())
     bucketlists = db.relationship(
-        'BucketList', backref='bucketlist_', lazy='dynamic')
+        'BucketList', backref='user', lazy='dynamic')
 
     def __init__(self, username, password):
         """Initialize a user object."""

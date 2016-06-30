@@ -25,10 +25,21 @@ def verify_token(token):
         except (SignatureExpired, BadSignature):
             return False
         if 'id' in data:
-            g.user_id = data['id']
-            g.user = data['username']
+            g.user = data['id']
+            g.user_name = data['username']
             return True
     return False
+
+def get_user_bucketlist(func):
+    """"Decorator that handles querying bucketlist by user hence prevent other users from accessing another users list """
+    def func_wrapper(*args, **kwargs):
+        bucketlist_id = kwargs['id']
+        bucketlist = BucketList.query.filter_by(created_by=g.user, id=bucketlist_id).first()
+        if bucketlist is None:
+            return {'Message': 'the bucket list was not found.'}, 404
+        g.bucketlist = bucketlist
+        return func(*args, **kwargs)
+    return func_wrapper
 
 
 
@@ -47,6 +58,7 @@ class SingleBucketList(Resource):
     """
 
     @auth.login_required
+    @get_user_bucketlist
     def get(self, id):
         """
         Retrieve the bucketlist using an id.
@@ -55,16 +67,10 @@ class SingleBucketList(Resource):
         Returns:
             json: The bucketlist with the id.
         """
-
-        bucketlist = BucketList.query.filter_by(created_by=g.user,
-                                                id=id).first()
-        if bucketlist:
-            print(dir(marshal))
-            return marshal(bucketlist, bucketlist_serializer)
-        else:
-            return {'Message': 'the bucket list was not found.'}, 404
+        return marshal(g.bucketlist,bucketlist_serializer)
 
     @auth.login_required
+    @get_user_bucketlist
     def put(self, id):
         """
         Update a bucketlist.
@@ -73,8 +79,7 @@ class SingleBucketList(Resource):
         Returns:
             json: response with success or failure message.
         """
-        bucketlist = BucketList.query.filter_by(created_by=g.user,
-                                                id=id).first()
+        bucketlist = g.bucketlist
         parser = reqparse.RequestParser()
         parser.add_argument('list_name', required=True,
                             help='list_name can not be blank')
@@ -90,6 +95,7 @@ class SingleBucketList(Resource):
             return jsonify({'Message': 'Failure. Please provide a name for the'
                             'bucketlist'})
     @auth.login_required
+    @get_user_bucketlist
     def delete(self, id):
         """
         Delete a bucketlist.
@@ -98,8 +104,7 @@ class SingleBucketList(Resource):
         Returns:
             json: response with success or failure message.
         """
-        bucketlist = BucketList.query.filter_by(created_by=g.user,
-                                                id=id).first()
+        bucketlist = g.bucketlist
         if bucketlist:
             db.session.delete(bucketlist)
             db.session.commit()
@@ -216,7 +221,7 @@ class BucketListItems(Resource):
         if limit and page:
             bucketlistitems = BucketListItem.\
                 query.filter_by(bucketlist_id=id).\
-                paginate(page, limit, False).all()
+                paginate(page, limit, False).items
         else:
             bucketlistitems = BucketListItem.\
                 query.filter_by(bucketlist_id=id).all()
@@ -265,17 +270,8 @@ class SingleBucketListItem(Resource):
     URL:
         /api/v1.0/bucketlist/<id>/items/<item_id>
     Methods:
-        GET, POST, DELETE
+         POST, DELETE
     """
-
-    @auth.login_required
-    def get(self, id, item_id):
-        """Method to handle all get requests to the route"""
-        get_bucket_list_item = BucketListItem.query.filter_by(
-            bucketlist_id=id, id=item_id).all()
-        if get_bucket_list_item:
-            return {'item': marshal(get_bucket_list_item, bucketlistitem_serializer)}, 200
-        return {'message': "Item with id: {} doesn't exist".format(id)}, 203
 
     @auth.login_required
     def put(self, id, item_id):
@@ -298,8 +294,6 @@ class SingleBucketListItem(Resource):
             item_name = args['item_name']
             item_description = args['item_description']
             done = args['done']
-            if item_name == '' or item_name is None:
-                return {'error': 'Please enter a item name'}, 203
             if item_name:
                 bucketlistitem.item_name = item_name
             if item_description:

@@ -1,13 +1,10 @@
-from flask import url_for
+
 import json
 from test_config import BaseTestCase
-from manage import db, app
-from app.models import BucketList, User, BucketListItem
+
 
 class TestBucketListItems(BaseTestCase):
     """Test bucket list items"""
-
-
     def create_bucketlist(self):
         """Test creation of a new bucketlist to test bucketlist item actions"""
         data = {'list_name': "Bucketlist 1"}
@@ -39,8 +36,7 @@ class TestBucketListItems(BaseTestCase):
         self.assert200(response)
 
     def test_bucket_list_item_creation_fails_when_no_info_is_provided(self):
-        """tests that creation of a bucket-list-item fails
-        when no info is sent"""
+        """tests that creation of a bucket-list-item fails when no info is sent"""
         data = {'item_name': ''}
         response = self.client.post('/api/v1.0/bucketlists/1/items/',
             data=data, headers=self.token)
@@ -63,6 +59,7 @@ class TestBucketListItems(BaseTestCase):
 
 
     def test_bucketlist_items_can_be_deleted(self):
+        """Test that a user can delete their bucket list"""
         self.create_bucketlist()
         self.create_bucketlist_item()
         data = {'item_name': 'bucketlist item 1',
