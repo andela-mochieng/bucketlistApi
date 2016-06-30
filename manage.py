@@ -1,5 +1,5 @@
 """Module runs the application, creates, migrates and upgrades the db """
-from app import create_app, db
+from app import app, db
 from app.models import User, BucketList, BucketListItem
 from flask.ext.script import Manager, Shell
 from flask.ext.migrate import Migrate, MigrateCommand
@@ -8,7 +8,7 @@ from app.resources import Home, Login, Register, BucketLists, SingleBucketList, 
     SingleBucketListItem,BucketListItems
 
 
-app = create_app
+
 manager = Manager(app)
 api = Api(app=app, prefix='/api/v1.0')
 migrate = Migrate(app, db)

@@ -1,9 +1,9 @@
 """Bucketlist models """
-from . import db
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import (TimedJSONWebSignatureSerializer
                           as Serializer, BadSignature, SignatureExpired)
+from . import db
 from config import config
 
 
@@ -11,7 +11,7 @@ class BucketListItem(db.Model):
     """Define items in a user's bucketlist."""
 
     __tablename__ = "bucketlistitems"
-    # __table_args__ = (db.UniqueConstraint('item_name', 'bucketlist_id'),)
+    __table_args__ = (db.UniqueConstraint('item_name', 'bucketlist_id'),)
     id = db.Column(db.Integer, primary_key=True)
     item_name = db.Column(db.String(256))
     item_description = db.Column(db.String(256))
@@ -22,16 +22,10 @@ class BucketListItem(db.Model):
     bucketlist_id = db.Column(db.Integer, db.ForeignKey(
         'bucketlists.id'), nullable=False)
 
-    # def __init__(self, item_name, item_description, bucketlist_id, done=False):
-    #     """Method used for instantiation of a BucketListItem Model"""
-    #     self.item_name = item_name
-    #     self.item_description = item_description
-    #     self.bucketlist_id = bucketlist_id
-
     def __repr__(self):
-        """Return a string representation of the user."""
+        """Return a string representation of the bucketlist item is
+                                  as Serializer, BadSignature, SignatureExpired)."""
         return '{}'.format(self.id)
-
 
 
 class BucketList(db.Model):
@@ -52,11 +46,9 @@ class BucketList(db.Model):
     date_modified = db.Column(db.DateTime, default=db.func.current_timestamp(),
                               onupdate=db.func.current_timestamp())
 
-
     def __repr__(self):
         """Return a string representation of the bucketlist."""
         return '<BucketList %r>' % self.id
-
 
 
 class User(db.Model):
@@ -72,7 +64,8 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True)
     password_hash = db.Column(db.String(128))
-    date_created = db.Column(db.DateTime, index=True, default=datetime.utcnow())
+    date_created = db.Column(db.DateTime, index=True,
+                             default=datetime.utcnow())
     bucketlists = db.relationship(
         'BucketList', backref='user', lazy='dynamic')
 
@@ -110,32 +103,12 @@ class User(db.Model):
         """
         token_serializer = Serializer(config['SECRET_KEY'],
                                       expires_in=expiration)
-        return token_serializer.dumps({'id': self.id, 'username':self.username})
-
-    @staticmethod
-    def verify_auth_token(token):
-        """
-        Verifies tokens
-        Args:
-            token: The token to be verified
-        Returns:
-            The user whose id is in the decoded token
-        """
-        token_serializer = Serializer(config['SECRET_KEY'])
-        try:
-            data = token_serializer.loads(token)
-        except (SignatureExpired, BadSignature):
-            return {'error': 'The token is invalid'}
-        user = User.query.get(data['id'])
-
-        return user
-
-
+        return token_serializer.dumps(
+            {'id': self.id, 'username': self.username})
 
     def __repr__(self):
         """Return a string representation of the user."""
         return '<User %r>' % self.username
-
 
     def get(self):
         return {
