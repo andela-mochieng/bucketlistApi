@@ -1,0 +1,423 @@
+import json
+from flask_restful import reqparse, abort, Resource
+from flask.ext.restful import marshal
+from flask import g, jsonify, request, make_response
+from sqlalchemy.exc import IntegrityError
+from flask_httpauth import HTTPTokenAuth
+from itsdangerous import (TimedJSONWebSignatureSerializer
+                          as Serializer, BadSignature, SignatureExpired)
+from app import db
+from config import config
+from app.models import BucketList, User, BucketListItem
+from serializers import bucketlist_serializer, bucketlistitem_serializer
+
+auth = HTTPTokenAuth(scheme='Token')
+
+
+@auth.verify_token
+def verify_token(token):
+    """Receives token and verifies it, the username and the password
+     must return True or False"""
+    if token:
+        token_serializer = Serializer(config['SECRET_KEY'])
+        try:
+            data = token_serializer.loads(token)
+        except (SignatureExpired, BadSignature):
+            return False
+        if 'id' in data:
+            g.user = data['id']
+            g.user_name = data['username']
+            return True
+    return False
+
+def get_user_bucketlist(func):
+    """"Decorator that handles querying bucketlist by user hence prevent other users from accessing another users list """
+    def func_wrapper(*args, **kwargs):
+        print(kwargs)
+        bucketlist_id = kwargs['id']
+        bucketlist = BucketList.query.filter_by(created_by=g.user, id=bucketlist_id).first()
+        print(bucketlist)
+        if bucketlist is None:
+            return {'Message': 'The bucket list was not found.'}, 404
+        g.bucketlist = bucketlist
+        return func(*args, **kwargs)
+    return func_wrapper
+
+def get_user_bucketlistitems(func):
+    """"Decorator that handles querying bucketlist by user hence prevent other users from accessing another users list """
+    def func_wrapper(*args, **kwargs):
+        bucketlist_id = kwargs['id']
+        id = kwargs['item_id']
+        bucketlistitem = BucketListItem.query.filter_by(bucketlist_id=bucketlist_id, id=id).first()
+        if bucketlistitem is None:
+            return {'Message': 'Bucketlist item {} don\'t exits.'.format(id)}, 404
+        g.bucketlistitem = bucketlistitem
+        return func(*args, **kwargs)
+    return func_wrapper
+
+@auth.error_handler
+def unauthorized():
+    """Alert user that a token is invalid"""
+    return jsonify({'error': 'Invalid Token', 'code': 403}), 403
+
+
+class SingleBucketList(Resource):
+    """
+    Manage responses to bucketlists requests.
+    URL:
+        /api/v1.0/bucketlists/<id>/
+    Methods:
+        GET, PUT, DELETE
+    """
+
+    @auth.login_required
+    @get_user_bucketlist
+    def get(self, id):
+        """
+        Retrieve the bucketlist using an id.
+        Args:
+            id: The id of the bucketlist to be retrieved
+        Returns:
+            json: The bucketlist with the id.
+        """
+
+        return marshal(g.bucketlist,bucketlist_serializer)
+
+
+    @auth.login_required
+    @get_user_bucketlist
+    def put(self, id):
+        """
+        Update a bucketlist.
+        Args:
+            id: The id of the bucketlist to be updated
+        Returns:
+            json: response with success or failure message.
+        """
+        bucketlist = g.bucketlist
+        parser = reqparse.RequestParser()
+        parser.add_argument('list_name', required=True,
+                            help='list_name can not be blank')
+        args = parser.parse_args()
+        new_list_name = args['list_name']
+        if new_list_name:
+            bucketlist.list_name = new_list_name
+            db.session.add(bucketlist)
+            db.session.commit()
+            return jsonify({'Message': 'Successfully updated bucketlist ',
+                            'list_name': bucketlist.list_name})
+        else:
+            return jsonify({'Message': 'Failure. Please provide a name for the'
+                            'bucketlist'})
+
+    @auth.login_required
+    @get_user_bucketlist
+    def delete(self, id):
+        """
+        Delete a bucketlist.
+        Args:
+            id: The id of the bucketlist to be updated
+        Returns:
+            json: response with success or failure message.
+        """
+        bucketlist = g.bucketlist
+        if bucketlist:
+            db.session.delete(bucketlist)
+            db.session.commit()
+            return {
+                'message': "Successfully deleted the bucket list item: {}".format(
+                    bucketlist.list_name)}
+        else:
+            return {'Message': 'Bucketlist {} don\'t exits.'.format(id)}, 404
+
+
+class BucketLists(Resource):
+    """
+    Retrieve created bucketlists.
+    Returns:
+        json: A list of bucketlists created by the user.
+    """
+    @auth.login_required
+    def get(self):
+        args = request.args.to_dict()
+        limit = int(args.get('limit', 10))
+        page = int(args.get('page', 1))
+        name = args.get('q')
+        if name:
+            results = BucketList.query. \
+                filter_by(created_by=g.user, list_name=name). \
+                paginate(page, limit, False).items
+            if results:
+                return marshal(results, bucketlist_serializer)
+            else:
+                return {'Message':
+                        'Bucketlist ' + name + ' not found.'}, 404
+        if args.keys().__contains__('q'):
+            return jsonify({'Message': 'Please provide a search parameter'})
+
+        bucketlists_page = BucketList.query.\
+            filter_by(created_by=g.user).paginate(
+                page=page, per_page=limit, error_out=False)
+        total = bucketlists_page.pages
+        next_item = bucketlists_page.has_next
+        previous_item = bucketlists_page.has_prev
+        if next_item:
+            next_page = str(request.url_root) + 'api/v1.0/bucketlists?' + \
+                'limit=' + str(limit) + '&page=' + str(page + 1)
+        else:
+            next_page = 'None'
+        if previous_item:
+            previous_page = request.url_root + 'api/v1.0/bucketlists?' + \
+                'limit=' + str(limit) + '&page=' + str(page - 1)
+        else:
+            previous_page = 'None'
+        bucketlists = bucketlists_page.items
+        print(bucketlists)
+        for b in bucketlists:
+            print(b.bucketlist_items)
+        re_quest = {'bucketlists': marshal(bucketlists, bucketlist_serializer),
+                    'next_item': next_item,
+                    'pages': total,
+                    'previous_page': previous_page,
+                    'next_page': next_page
+                    }
+        return re_quest
+
+    @auth.login_required
+    def post(self):
+        """
+        Create and save a new bucketlist.
+        Returns:
+            A response indicating success.
+        """
+        try:
+            parser = reqparse.RequestParser()
+            parser.add_argument('list_name', required=True,
+                                help='list_name can not be blank')
+            args = parser.parse_args()
+            list_name = args['list_name']
+        except Exception as e:
+            return {'error': str(e)}, 400
+        if list_name == " " or list_name is None or not list_name:
+            return {"message": "Enter a bucketlist name"}, 400
+        try:
+            if list_name:
+                new_bucketlist = BucketList(
+                    list_name=list_name, created_by=g.user)
+                db.session.add(new_bucketlist)
+                db.session.commit()
+                return {'message': 'BucketList {} has been created'.format(
+                    list_name)}, 201
+        except IntegrityError:
+            db.session.rollback()
+            return {'message': "Bucket list : {} not modified".format(
+                list_name)}, 200
+
+
+class BucketListItems(Resource):
+    """
+    Manage responses to bucketlist items requests.
+    URL:
+        /api/v1.0/bucketlists/<id>/items/
+    Methods:
+        GET, POST
+    """
+
+    @auth.login_required
+    def post(self, id):
+        """
+        Add an item to a bucketlist.
+        Args:
+            id: The id of the bucketlist to add item
+        Returns:
+            json: response with success message and item name.
+        """
+        parser = reqparse.RequestParser()
+        parser.add_argument('item_name', required=True,
+                            help='item_name can not be blank')
+        parser.add_argument('item_description', required=True,
+                            help='item_description can not be blank')
+        args = parser.parse_args()
+        item_name = args['item_name']
+        item_description = args['item_description']
+        done = False
+
+        if item_name and item_description:
+            bucketlistitem = BucketListItem(item_name=item_name,
+                                            item_description=item_description,
+                                            done=done, bucketlist_id=id)
+            try:
+                db.session.add(bucketlistitem)
+                db.session.commit()
+                return {'item': marshal(bucketlistitem,
+                                        bucketlistitem_serializer)}, 201
+
+            except IntegrityError:
+                db.session.rollback()
+                return {'error': 'The bucketlist item already exists.'}
+
+
+class SingleBucketListItem(Resource):
+    """
+    Manage responses to bucketlist items requests.
+    URL:
+        /api/v1.0/bucketlist/<id>/items/<item_id>
+    Methods:
+         POST, DELETE
+    """
+
+    @auth.login_required
+    @get_user_bucketlist
+    @get_user_bucketlistitems
+    def put(self, id, item_id):
+        """
+        Update a bucketlist item.
+        Args:
+            id: The id of the bucketlist with the item
+            item_id: The id of the item being updated
+        Returns:
+            json: A response with a success message.
+        """
+        try:
+            bucketlist = g.bucketlist
+            bucketlistitem = g.bucketlistitem
+            parser = reqparse.RequestParser()
+            parser.add_argument('item_name')
+            parser.add_argument('item_description')
+            parser.add_argument('done')
+            args = parser.parse_args()
+            item_name = args['item_name']
+            item_description = args['item_description']
+            done = args['done']
+            if item_name:
+                bucketlistitem.item_name = item_name
+            if item_description:
+                bucketlistitem.item_description = item_description
+            if done:
+                if str(done).lower() == 'true':
+                    done = True
+                else:
+                    done = False
+                bucketlistitem.done = done
+            else:
+                return {'Message': 'No fields were changed.'}, 200
+
+            db.session.add(bucketlistitem)
+            db.session.commit()
+            return {'Message': 'Successfully updated item.',
+                    'item_name': bucketlistitem.item_name}, 200
+        except AttributeError:
+            return {'Message': 'No item matching the given id was found.'}, 404
+
+    @auth.login_required
+    @get_user_bucketlist
+    @get_user_bucketlistitems
+    def delete(self, id, item_id):
+        """
+        Delete a bucketlist item.
+        Args:
+            id: The id of the bucketlist with the item
+            item_id: The id of the item being deleted
+        Returns:
+            json: A response with a success/ failure message.
+        """
+
+        bucketlist = g.bucketlist
+        bucketlistitem = g.bucketlistitem
+        if bucketlistitem:
+            db.session.delete(bucketlistitem)
+            db.session.commit()
+            return {
+                'message': "Successfully deleted the bucket list item: {}".format(
+                    bucketlistitem.item_name)}, 200
+
+        else:
+            return {'Message': 'Bucketlist item {} don\'t exits.'.format(item_id)}, 404
+
+
+class Home(Resource):
+    """
+    Handles requests to home route.
+    Resource url:
+        '/'
+    Endpoint:
+        'home'
+    Requests Allowed:
+        GET
+    """
+
+    def get(self):
+        """
+        Returns:
+            A json welcome message
+        """
+        return jsonify({"message": "Welcome to my bucketlist API."
+                        "" + " Send a POST request to /auth/register "
+                        "" + "with your login details "
+                        "" + "to get started."})
+
+
+class Login(Resource):
+    """
+    Manage responses to user requests.
+    """
+
+    def post(self):
+        """
+        Authenticate a user.
+        Returns:
+            json: authentication token, expiration duration or error message.
+        """
+        try:
+            self.parser = reqparse.RequestParser()
+            self.parser.add_argument('username', type=str, required=True,
+                                     help='Unauthorized Access', location='json')
+            self.parser.add_argument('password', type=str, required=True,
+                                     help='Unauthorized Access', location='json')
+            args = self.parser.parse_args()
+
+        except Exception as e:
+            return {'error': str(e)}, 401
+        user = User.query.filter_by(username=args['username']).first()
+        if user and user.verify_password(args['password']):
+            return {'Token': user.generate_auth_token()}, 200
+        else:
+            abort(401, message='Invalid username or password')
+
+
+class Register(Resource):
+    """
+    Manage responses to user requests.
+    """
+
+    def post(self):
+        """
+        Register a user.
+        Returns:
+            json: authentication token, username and duration or error message.
+        """
+        try:
+            self.parser = reqparse.RequestParser()
+            self.parser.add_argument('username', type=str, required=True,
+                                     help='Unauthorized Access', location='json')
+            self.parser.add_argument('password', type=str, required=True,
+                                     help='Unauthorized Access', location='json')
+            args = self.parser.parse_args()
+            username = args['username']
+            password = args['password']
+        except Exception as e:
+            return {'error': str(e)}, 400
+        if password == '' or username == '':
+            abort(401, messages="Kindly enter your username and password")
+        else:
+            user = User.query.filter_by(username=username).first()
+            if user is not None:
+                abort(401, messages="User already exists")
+            else:
+                try:
+                    new_user = User(username=username, password=password)
+                    db.session.add(new_user)
+                    db.session.commit()
+                    return new_user.get(), 201
+                except Exception:
+                    return {'error': 'Failed to create User'}
