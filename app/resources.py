@@ -33,14 +33,27 @@ def verify_token(token):
 def get_user_bucketlist(func):
     """"Decorator that handles querying bucketlist by user hence prevent other users from accessing another users list """
     def func_wrapper(*args, **kwargs):
+        print(kwargs)
         bucketlist_id = kwargs['id']
         bucketlist = BucketList.query.filter_by(created_by=g.user, id=bucketlist_id).first()
+        print(bucketlist)
         if bucketlist is None:
-            return {'Message': 'the bucket list was not found.'}, 404
+            return {'Message': 'The bucket list was not found.'}, 404
         g.bucketlist = bucketlist
         return func(*args, **kwargs)
     return func_wrapper
 
+def get_user_bucketlistitems(func):
+    """"Decorator that handles querying bucketlist by user hence prevent other users from accessing another users list """
+    def func_wrapper(*args, **kwargs):
+        bucketlist_id = kwargs['id']
+        id = kwargs['item_id']
+        bucketlistitem = BucketListItem.query.filter_by(bucketlist_id=bucketlist_id, id=id).first()
+        if bucketlistitem is None:
+            return {'Message': 'Bucketlist item {} don\'t exits.'.format(id)}, 404
+        g.bucketlistitem = bucketlistitem
+        return func(*args, **kwargs)
+    return func_wrapper
 
 @auth.error_handler
 def unauthorized():
@@ -254,6 +267,8 @@ class SingleBucketListItem(Resource):
     """
 
     @auth.login_required
+    @get_user_bucketlist
+    @get_user_bucketlistitems
     def put(self, id, item_id):
         """
         Update a bucketlist item.
@@ -264,8 +279,8 @@ class SingleBucketListItem(Resource):
             json: A response with a success message.
         """
         try:
-            bucketlistitem = BucketListItem. \
-                query.filter_by(bucketlist_id=id, id=item_id).first()
+            bucketlist = g.bucketlist
+            bucketlistitem = g.bucketlistitem
             parser = reqparse.RequestParser()
             parser.add_argument('item_name')
             parser.add_argument('item_description')
@@ -295,6 +310,8 @@ class SingleBucketListItem(Resource):
             return {'Message': 'No item matching the given id was found.'}, 404
 
     @auth.login_required
+    @get_user_bucketlist
+    @get_user_bucketlistitems
     def delete(self, id, item_id):
         """
         Delete a bucketlist item.
@@ -304,8 +321,9 @@ class SingleBucketListItem(Resource):
         Returns:
             json: A response with a success/ failure message.
         """
-        bucketlistitem = BucketListItem. \
-            query.filter_by(bucketlist_id=id, id=item_id).first()
+
+        bucketlist = g.bucketlist
+        bucketlistitem = g.bucketlistitem
         if bucketlistitem:
             db.session.delete(bucketlistitem)
             db.session.commit()

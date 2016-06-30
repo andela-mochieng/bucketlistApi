@@ -22,7 +22,7 @@ class BaseTestCase(TestCase):
                                          data=json.dumps({'username':'Test',
                                                        'password':'1234'}),
                                          content_type="application/json")
-        # print resp_register.json.get('id')
+
         response = self.client.post(url_for(
             'login'), data=json.dumps({'username':'Test',
                                                        'password':'1234'}),

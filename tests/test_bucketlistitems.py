@@ -1,12 +1,10 @@
-
 import json
 from test_config import BaseTestCase
-
-
+from flask import url_for
 
 class TestBucketListItems(BaseTestCase):
     """Test bucket list items"""
-    
+
     def create_bucketlist(self):
         """Test creation of a new bucketlist to test bucketlist item actions"""
         data = {'list_name': "Bucketlist 1"}
@@ -73,3 +71,29 @@ class TestBucketListItems(BaseTestCase):
                                    headers=self.token)
         self.assertEqual(response.status_code, 200)
         self.assertIn("No fields were changed", response.data)
+
+    def test_another_users_bucketlist_items_cant_be_deleted_by_another_user(self):
+        """Test that a user cant delete another users bucket list"""
+        resp_register = self.client.post(url_for('register'),
+                                         data=json.dumps({'username': 'Test1',
+                                                          'password': '12345'}),
+                                         content_type="application/json")
+
+        response = self.client.post(url_for(
+            'login'), data=json.dumps({'username': 'Test1',
+                                       'password': '12345'}),
+            content_type="application/json")
+        token = response.json
+        self.token = {'Authorization': 'token ' + token['Token']}
+
+        self.create_bucketlist()
+        self.create_bucketlist_item()
+
+
+        data = {'item_name': 'bucketlist item 1',
+                'item_description': 'First item description 1'}
+        response = self.client.delete('/api/v1.0/bucketlists/1/items/1',
+                                      data=data,
+                                      headers=self.token)
+        self.assert404(response)
+        self.assertIn("The bucket list was not found", response.data)

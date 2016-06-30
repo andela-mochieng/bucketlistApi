@@ -64,3 +64,23 @@ class BucketListTest(BaseTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("Successfully updated bucketlist",
                       response.data)
+
+    def test_another_users_bucketlist_cant_be_deleted_by_another_user(self):
+        """Test that a user cant delete another users bucket list"""
+        resp_register = self.client.post(url_for('register'),
+                                         data=json.dumps({'username': 'Test1',
+                                                          'password': '12345'}),
+                                         content_type="application/json")
+
+        response = self.client.post(url_for(
+            'login'), data=json.dumps({'username': 'Test1',
+                                       'password': '12345'}),
+            content_type="application/json")
+        token = response.json
+        self.token = {'Authorization': 'token ' + token['Token']}
+
+        response = self.client.delete('/api/v1.0/bucketlists/1/',
+                                   headers=self.token)
+
+        self.assertEqual(response.status_code, 404)
+        self.assertIn("The bucket list was not found", response.data)
